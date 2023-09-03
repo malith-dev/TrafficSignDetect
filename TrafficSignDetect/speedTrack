@@ -1,0 +1,39 @@
+import serial
+import pynmea2
+import lcdOut
+
+# Define the serial port where the GPS module is connected (e.g., "/dev/ttyS0" or "/dev/serial0")
+serial_port = "/dev/ttyS0"
+
+# Open the serial port
+ser = serial.Serial(serial_port, baudrate=9600, timeout=1)
+
+while True:
+    try:
+        # Read a line of data from the GPS module
+        data = ser.readline().decode('utf-8')
+        
+        # Check if the line starts with '$GPRMC' (or '$GPVTG' if you prefer)
+        if data.startswith('$GPRMC'):
+            msg = pynmea2.parse(data)
+            
+            # Extract the speed in knots
+            if hasattr(msg, 'spd_over_grnd'):
+                speed_knots = msg.spd_over_grnd
+                
+                # Convert to other units if needed (e.g., km/h)
+                speed_kmh = speed_knots * 1.852
+                
+                print(f"Speed (knots): {speed_knots}")
+                print(f"Speed (km/h): {speed_kmh}")
+    
+    except KeyboardInterrupt:
+        # Exit the loop when you press Ctrl+C
+        break
+    except Exception as e:
+        #handle any other exceptions
+        print(f"Error: GPS data is not available")
+        lcdOut.display_on_lcd("Error: GPS data is not available")
+
+# Close the serial port when done
+ser.close()
